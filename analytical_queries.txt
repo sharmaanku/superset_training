@@ -1,0 +1,124 @@
+
+### 🔹 1. Cost Efficiency Analysis: Return vs Single
+
+```sql
+SELECT 
+  "Department",
+  "Ticket Single or Return",
+  COUNT(*) AS total_trips,
+  SUM("Cost") AS total_cost,
+  SUM("Distance") AS total_distance,
+  ROUND(SUM("Cost") / NULLIF(SUM("Distance"), 0), 2) AS cost_per_km
+FROM travel_data
+GROUP BY "Department", "Ticket Single or Return"
+ORDER BY "Department", "Ticket Single or Return";
+```
+
+---
+
+### 🔹 2. Departmental Spend Trend by Month
+
+SELECT 
+  "Department",
+  ROUND(SUM("Cost"), 2) AS total_cost_march_2011
+FROM travel_data
+WHERE EXTRACT(YEAR FROM CAST("Travel Date" AS DATE)) = 2011
+  AND EXTRACT(MONTH FROM CAST("Travel Date" AS DATE)) = 3
+GROUP BY "Department"
+ORDER BY total_cost_march_2011 DESC
+LIMIT 1;
+
+
+
+```sql
+SELECT 
+  "Department",
+  DATE_TRUNC('month', CAST("Travel Date" AS DATE)) 
+  AS travel_month,
+  ROUND(SUM("Cost"), 2) AS total_monthly_cost
+FROM travel_data
+GROUP BY "Department", DATE_TRUNC('month',
+ CAST("Travel Date" AS DATE))
+ORDER BY travel_month, "Department";
+```
+
+---
+
+### 🔹 3. Airline Preference by Distance Bucket
+
+```sql
+SELECT 
+  "Airline",
+  CASE 
+    WHEN "Distance" < 600 THEN 'Short'
+    WHEN "Distance" BETWEEN 600 AND 1000 THEN 'Medium'
+    ELSE 'Long'
+  END AS distance_category,
+  COUNT(*) AS flight_count,
+  ROUND(SUM("Cost"), 2) AS total_cost
+FROM travel_data
+GROUP BY "Airline", distance_category
+ORDER BY distance_category, flight_count DESC;
+```
+
+---
+
+### 🔹 4. Frequent Route Identification
+
+```sql
+SELECT 
+  CONCAT("Origin ICAO", '→', "Destination ICAO") AS route,
+  COUNT(*) AS trip_count,
+  ROUND(SUM("Cost"), 2) AS total_cost
+FROM travel_data
+GROUP BY route
+ORDER BY trip_count DESC
+LIMIT 10;
+```
+
+---
+
+### 🔹 5. Outlier Cost Detection (High cost per km)
+
+```sql
+SELECT 
+  *,
+  ROUND("Cost" / NULLIF("Distance", 0), 2) AS cost_per_km
+FROM travel_data
+WHERE ("Cost" / NULLIF("Distance", 0)) > (
+  SELECT AVG("Cost" / NULLIF("Distance", 0)) * 2 FROM travel_data
+)
+ORDER BY cost_per_km DESC;
+```
+
+---
+
+### 🔹 6. Region-wise Spend Summary
+
+```sql
+SELECT 
+  "Destination Region",
+  COUNT(*) AS trip_count,
+  ROUND(SUM("Cost"), 2) AS total_cost,
+  SUM("Distance") AS total_distance
+FROM travel_data
+GROUP BY "Destination Region"
+ORDER BY total_cost DESC;
+```
+
+---
+
+### 🔹 7. Estimated CO2 Emissions
+
+Assuming `0.133 kg/km` as CO2 per km per passenger:
+
+```sql
+SELECT 
+  "Department",
+  SUM("Distance") AS total_distance,
+  ROUND(SUM("Distance") * 0.133, 2) AS estimated_CO2_kg
+FROM travel_data
+GROUP BY "Department"
+ORDER BY estimated_CO2_kg DESC;
+```
+
